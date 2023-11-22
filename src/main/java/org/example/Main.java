@@ -63,7 +63,7 @@ public class Main {
     private static boolean verifyPassword(String password, String username) {
         for (User user:users) {
             if(username.equals(user.getUsername())){
-                if(password.equals(password)){
+                 if(password.equals(user.getHashedPassword())){
                     System.out.println("we suspect you are not the owner of the account...");
                     return false;
                 }
