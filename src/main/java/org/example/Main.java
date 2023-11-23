@@ -5,44 +5,83 @@ import java.security.SecureRandom;
 import java.util.*;
 
 public class Main {
+    private final static String hashAlgorithm="SHA-256";
     private final static ArrayList<User> users=new ArrayList<>();
     private final static User currentUser=new User("","",null);
-    private final static int passwordLength=5;
+    private final static int passwordLength=7;
+    private final static int numberOfThreads=3;
 
     public static void main(String[] args) {
+
+        promptRegistration();
+        //promptVerification();
+
+        //crackPasswordWithAtMost(passwordLength);
+        //System.out.println(crackPasswordWithExactly(passwordLength));
+        crackPasswordByMultiThread(passwordLength,numberOfThreads);
+
+        System.exit(1);
+    }
+    private static String crackPasswordWithExactly(int length){
+        long startTime = System.currentTimeMillis(); // מתחיל טיימר
+        int maxNumber = (int) Math.pow(10, length);
+
+        String password="";
+        String hashedPassword="";
+        for (int i = 0; i < maxNumber; i++) {
+            String formatString = "%0" + length + "d";
+            password = String.format(formatString, i);
+            hashedPassword = hashPassword(password, toPrimitiveByteArray(currentUser.getSalt()));
+            if (hashedPassword.equals(currentUser.getHashedPassword())) {
+                break;
+            }
+        }
+        long duration = System.currentTimeMillis() - startTime;       // מודד טיימר
+        if (!hashedPassword.equals(currentUser.getHashedPassword())) {
+           password="not found";
+        }
+        return password+"."+duration;
+    }
+    private static void crackPasswordWithAtMost(int maxLength){
+        for(int i=1;i<=maxLength;i++){
+            String result= crackPasswordWithExactly(i);
+            String duration=result.substring(result.indexOf('.')+1);
+            String password=result.substring(0,result.indexOf('.'));
+            if(!password.equals("not found")){
+                System.out.println("the password is: "+password);
+                System.out.println("duration: "+duration+" milliseconds");
+            }
+        }
+    }
+
+    private static void crackPasswordByMultiThread(int passwordLength, int numberOfThreads) {
+        long startTime = System.currentTimeMillis(); // מתחיל טיימר
+
+        int totalRange = (int) Math.pow(10, passwordLength); // Total range based on password length
+        int rangePerThread = totalRange / numberOfThreads;
+
+        Thread[] threads = new Thread[numberOfThreads];
+
+        for (int i = 0; i < numberOfThreads; i++) {
+            int start = i * rangePerThread;
+            int end = (i == numberOfThreads - 1) ? totalRange - 1 : (i + 1) * rangePerThread - 1;
+            threads[i] = new Thread(new PasswordCrackerThread(start, end, passwordLength,currentUser));
+            threads[i].start();
+        }
+        for (int i = 0; i < numberOfThreads; i++) {try {threads[i].join();} catch (InterruptedException e) {e.printStackTrace();}}// מחכה שכל התהליכונים יסיימו
+
+        long duration = System.currentTimeMillis() - startTime;       // מודד טיימר
+        System.out.println("Time taken: " + duration + " milliseconds");// מדפיס תוצאה
+    }
+
+
+    private static void promptRegistration(){
         Scanner scanner = new Scanner(System.in);
-        // Register a new user
         System.out.println("enter your username:");
         String newUsername=scanner.nextLine();
         System.out.println("Create a new password:");
         String newPassword = scanner.nextLine();
         registerUser(newPassword,newUsername);
-
-        // Prompt for password verification
-        System.out.println("Enter your username for verification:");
-        String enteredUsername=scanner.nextLine();
-        System.out.println("Enter your password for verification:");
-        String enteredPassword = scanner.nextLine();
-        if (verifyPassword(enteredPassword,enteredUsername)) {
-            System.out.println("Password verified successfully!");
-        } else {
-            System.out.println("Password verification failed.");
-        }
-
-        List<String> passwords= Utility.generatePasswordsOfLength(passwordLength);
-        HashMap<String,String> plainAndHash=new HashMap<>();
-        for(String password:passwords){plainAndHash.put(password,hashPassword(password,toPrimitiveByteArray(currentUser.getSalt())));}
-        String foundPassword;
-        for (Map.Entry<String, String> entry : plainAndHash.entrySet()) {
-            if (entry.getValue().equals(currentUser.getHashedPassword())) {
-                foundPassword = entry.getKey();
-                System.out.println("the password is: "+foundPassword);
-                break;
-            }
-        }
-
-        scanner.close();
-        System.exit(1);
     }
 
     private static void registerUser(String password,String username) {
@@ -62,28 +101,40 @@ public class Main {
         users.add(currentUser);
     }
 
+    private static void promptVerification(){
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter your username for verification:");
+        String enteredUsername=scanner.nextLine();
+        System.out.println("Enter your password for verification:");
+        String enteredPassword = scanner.nextLine();
+        if (verifyPassword(enteredPassword,enteredUsername)) {
+            System.out.println("Password verified successfully!");
+        } else {
+            System.out.println("Password verification failed.");
+        }
+    }
     private static boolean verifyPassword(String password, String username) {
         for (User user:users) {
             if(username.equals(user.getUsername())){
-                 if(password.equals(user.getHashedPassword())){
+                if(password.equals(user.getHashedPassword())){
                     System.out.println("we suspect you are not the owner of the account...");
                     return false;
                 }
                 String hashedPassword = hashPassword(password,toPrimitiveByteArray(user.getSalt()));
                 if (hashedPassword.equals(user.getHashedPassword())) {
-                    return true; // Password matches
+                    return true;
                 }
             }
         }
-        return false; // No match found
+        return false;
     }
 
-    private static String hashPassword(String password, byte[] salt) {
+    public static String hashPassword(String password, byte[] salt) {
         try {
             //the messageDigest is representing the hash algorithm we have chosen.
             // It provides applications the functionality of a message digest algorithm, such as SHA-256.
             // Message digest algorithms are used to produce a fixed-size hash value from arbitrary-length data (like a password).
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = MessageDigest.getInstance(hashAlgorithm);
             //we are giving the hash algorithm an additional bytes (the ones generated by secure random) to hash along with the plain text password.
             digest.update(salt);
             //breaks the password into bytes and digest it along with the salt bytes which are already in the MessageDigest  from the previous line and now they are hashed.
@@ -97,7 +148,7 @@ public class Main {
                 if (hex.length() == 1) hexString.append('0');
                 hexString.append(hex);
             }
-            System.out.println(hexString.toString());
+            //System.out.println(hexString);// רק לצורך בדיקה
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
@@ -115,7 +166,7 @@ public class Main {
         return bytesObject;
     }
 
-    private static byte[] toPrimitiveByteArray(Byte[] bytesObject) {
+    public static byte[] toPrimitiveByteArray(Byte[] bytesObject) {
         //in this method we turn byte from its wrapper class type into its primitive type by
         //creating a primitive type array and passing to it the bytes from the wrapper class array.
         byte[] bytesPrimitive = new byte[bytesObject.length];
