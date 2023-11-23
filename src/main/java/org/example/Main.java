@@ -9,7 +9,7 @@ public class Main {
     private final static ArrayList<User> users=new ArrayList<>();
     private final static User currentUser=new User("","",null);
     private final static int passwordLength=7;
-    private final static int numberOfThreads=3;
+    private final static int numberOfThreads=4;
 
     public static void main(String[] args) {
 
