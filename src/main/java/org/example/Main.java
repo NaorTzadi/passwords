@@ -5,8 +5,10 @@ import java.security.SecureRandom;
 import java.util.*;
 
 public class Main {
-    private static ArrayList<User> users=new ArrayList<>();
-    //static String testHashedPassword="";
+    private final static ArrayList<User> users=new ArrayList<>();
+    private final static User currentUser=new User("","",null);
+    private final static int passwordLength=5;
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         // Register a new user
@@ -27,18 +29,18 @@ public class Main {
             System.out.println("Password verification failed.");
         }
 
- /*       List<String> passwords= Utility.generateAll4DigitPasswords();
+        List<String> passwords= Utility.generatePasswordsOfLength(passwordLength);
         HashMap<String,String> plainAndHash=new HashMap<>();
-        for(String password:passwords){plainAndHash.put(password,Utility.hashPassword(password));}
-        String foundPassword = null;
+        for(String password:passwords){plainAndHash.put(password,hashPassword(password,toPrimitiveByteArray(currentUser.getSalt())));}
+        String foundPassword;
         for (Map.Entry<String, String> entry : plainAndHash.entrySet()) {
-            if (entry.getValue().equals(testHashedPassword)) {
+            if (entry.getValue().equals(currentUser.getHashedPassword())) {
                 foundPassword = entry.getKey();
-                System.out.println(foundPassword);
+                System.out.println("the password is: "+foundPassword);
                 break;
             }
         }
-*/
+
         scanner.close();
         System.exit(1);
     }
@@ -54,10 +56,10 @@ public class Main {
 
         // Hash the password with salt
         String hashedPassword = hashPassword(password, salt);
-        //testHashedPassword=hashedPassword; //למחוק אחר כך
-        // Store the hash and salt
-        //hashSaltMap.put(hashedPassword, toByteObjectArray(salt));
-        users.add(new User(username,hashedPassword,toByteObjectArray(salt)));
+        currentUser.setHashedPassword(hashedPassword);
+        currentUser.setSalt(toByteObjectArray(salt));
+        currentUser.setUsername(username);
+        users.add(currentUser);
     }
 
     private static boolean verifyPassword(String password, String username) {
