@@ -1,0 +1,36 @@
+package org.example;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+public class Utility {
+
+
+    static List<String> getListOfHashAlgorithms(){
+        List<String> hashAlgorithms = new ArrayList<>();
+        hashAlgorithms.add("MD5"); // Message Digest Algorithm 5
+        hashAlgorithms.add("SHA-1"); // Secure Hash Algorithm 1
+        hashAlgorithms.add("SHA-256"); // Secure Hash Algorithm 256-bit
+        hashAlgorithms.add("SHA-384"); // Secure Hash Algorithm 384-bit
+        hashAlgorithms.add("SHA-512"); // Secure Hash Algorithm 512-bit
+        hashAlgorithms.add("SHA3-256"); // Secure Hash Algorithm 3 256-bit
+        hashAlgorithms.add("SHA3-384"); // Secure Hash Algorithm 3 384-bit
+        hashAlgorithms.add("SHA3-512"); // Secure Hash Algorithm 3 512-bi
+        return hashAlgorithms;
+    }
+    static void printListOfHashAlgorithms(){for(String hashType:getListOfHashAlgorithms()){System.out.println(hashType);}}
+
+    static void promptLengthOfPassword(String str){
+        Scanner scanner=new Scanner(System.in);
+        String decision;
+        do {
+            System.out.println("press 0 to go back");
+            System.out.println("choose the "+str+" number of characters the password has");
+            System.out.println(str+" number of characters: ");
+            decision=scanner.nextLine();
+            if (decision.equals("0")){Main.passwordCrackerMenu();}
+        }while (!decision.matches("-?\\d+"));
+
+    }
+}
