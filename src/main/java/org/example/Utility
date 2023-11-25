@@ -33,4 +33,39 @@ public class Utility {
         }while (!decision.matches("-?\\d+"));
 
     }
+    static int promptCustomPasswordIntegerIngredients(String str,int index){
+        Scanner scanner=new Scanner(System.in);
+        String decision;
+        do {
+            System.out.println(str);
+            decision=scanner.nextLine();
+            if (decision.isEmpty()){return -1;}
+            if (decision.equals("0")){Main.customPasswords[index]=null;Main.mainMenu();}
+        }while (!decision.matches("-?\\d+"));
+        return Integer.parseInt(decision);
+    }
+    static boolean promptCustomPasswordBooleanIngredients(String str,int index){
+        Scanner scanner=new Scanner(System.in);
+        String decision;
+        do {
+            System.out.println(str);
+            decision=scanner.nextLine();
+            if (decision.isEmpty()){return false;}
+            if (decision.equals("0")){Main.customPasswords[index]=null; Main.mainMenu();}
+        }while (!decision.toLowerCase().equals("yes")&&!decision.toLowerCase().equals("no"));
+        if(decision.equals("yes")) {return true;}else {return false;}
+    }
+
+    // יכול להיות שלא צריך
+    static CustomPassword eraseCustomPassword(CustomPassword customPassword){
+        customPassword.setName(null);
+        customPassword.setExactLength(-1);
+        customPassword.setMaxLength(-1);
+        customPassword.setMinimumLength(-1);
+        customPassword.setIsContainUsernameAllowed(true);
+        customPassword.setIsCapitalLetterRequired(false);
+        customPassword.setIsLowerLetterRequired(false);
+        customPassword.setIsUniqueCharacterRequired(false);
+        return customPassword;
+    }
 }
