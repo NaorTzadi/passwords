@@ -5,9 +5,11 @@ import java.security.SecureRandom;
 import java.util.*;
 
 public class Main {
+    public static CustomPassword[] customPasswords=new CustomPassword[3];
     private static String hashAlgorithm="SHA-256";
     private final static ArrayList<User> users=new ArrayList<>();
-    private static CustomPassword customPassword=new CustomPassword(-1,false,-1,-1,false,false,false);
+    private static boolean hasCreatedCustomPassword =false;
+    private static boolean hasLogIn=false;
     private static User currentUser=new User("","",null);
     private static int passwordLength=7;
     private static int numberOfThreads=4;
@@ -23,7 +25,7 @@ public class Main {
 
         System.exit(1);
     }
-    private static void mainMenu(){
+    public static void mainMenu(){
         Scanner scanner=new Scanner(System.in);
         final String option1="1";final String option2="2";final String option3="3";final String option4="4";
         String decision;
@@ -40,25 +42,25 @@ public class Main {
         } else if (decision.equals(option2)) {
             promptVerification();
         } else if (decision.equals(option3)) {
+            promptHashType();
             passwordCrackerMenu();
         } else{
-
+            generateCustomPassword();
         }
 
     }
     public static void passwordCrackerMenu(){
-        promptHashType();
-
         Scanner scanner=new Scanner(System.in);
-        final String option1="1";final String option2="2";final String option3="3";final String option4="4";
+        final String option1="1";final String option2="2";final String option3="3";final String option4="4";final String option5="5";
         String decision;
         do {
             System.out.println("press 1 to crack with exactly X number of characters");
             System.out.println("press 2 to crack with at most X number of characters");
             System.out.println("press 3 to crack with multi thread");
-            System.out.println("press 4 to go back to the main menu");
+            System.out.println("press 4 to crack your custom passwords");
+            System.out.println("press 5 to go back to the main menu");
             decision=scanner.nextLine();
-        }while (!decision.equals(option1)&& !decision.equals(option2)&& !decision.equals(option3) && !decision.equals(option4));
+        }while (!decision.equals(option1)&& !decision.equals(option2)&& !decision.equals(option3) && !decision.equals(option4)&&!decision.equals(option5));
         if(decision.equals(option1)){
             Utility.promptLengthOfPassword("exact");
             passwordLength=Integer.parseInt(decision);
@@ -75,9 +77,40 @@ public class Main {
                 numberOfThreads=Integer.parseInt(decision);
                 crackPasswordByMultiThread(passwordLength,numberOfThreads);
             }
+        }else if (decision.equals(option4)){
+            if (!hasCreatedCustomPassword){
+                System.out.println("you haven't made any custom password!");
+                passwordCrackerMenu();
+            }else {
+                chooseCustomPasswordToCrack();
+            }
         }else {
             mainMenu();
         }
+    }
+    private static void chooseCustomPasswordToCrack(){
+        Scanner scanner=new Scanner(System.in);
+        String decision;
+        boolean isValidInput=false;
+        do {
+            System.out.println("you can press '0' at any point to go back");
+            System.out.println("choose which one to crack:");
+            for(int i=0;i<customPasswords.length;i++){
+                if(customPasswords[i].getName()!=null){
+                    System.out.println("press "+(i+1)+" to crack "+customPasswords[i].getName());
+                }
+            }
+            decision=scanner.nextLine();
+            if (decision.equals("0")){passwordCrackerMenu();}
+            if(decision.matches("-?\\d+")){isValidInput=true;}
+        }while (!isValidInput&&Integer.parseInt(decision)>customPasswords.length && Integer.parseInt(decision)<1);
+
+        System.out.println(customPasswords[Integer.parseInt(decision)-1].toString());
+        crackCustomPassword(customPasswords[Integer.parseInt(decision)-1]);
+        //צריך להכין
+    }
+    private static void crackCustomPassword(CustomPassword customPassword){
+
     }
     private static String crackPasswordWithExactly(int length){
         long startTime = System.currentTimeMillis(); // מתחיל טיימר
@@ -95,27 +128,43 @@ public class Main {
         }
         long duration = System.currentTimeMillis() - startTime;       // מודד טיימר
         if (!hashedPassword.equals(currentUser.getHashedPassword())) {
-           password="not found";
+            password="not found";
         }
         return password+"."+duration;
     }
 
-    private static void customPasswordMenu(){
-        Scanner scanner=new Scanner(System.in);
-        String decision;
-        decision=scanner.nextLine();
-        System.out.println("max number of characters:");
-        System.out.println("min number of characters:");
-        System.out.println("exact number of characters:");
-        System.out.println("is capital letter required:");
-        System.out.println("is lower letter required:");
-        System.out.println("is unique characters required:");
-        System.out.println("is allowed to contain username:");
+    private static void generateCustomPassword(){
+        int index=0;
+        boolean isFull=true;
+        for (int i=0;i<customPasswords.length;i++){
+            if (customPasswords[i]==null){
+                customPasswords[i]=new CustomPassword(null,-1,-1,-1,-1,true,false,false,false);
+                isFull=false;
+                index=i;
+                break;
+            }
+        }
+        if (isFull){
+            System.out.println("you already created the max amount of custom passwords!");
+            mainMenu();
+        }
 
+        System.out.println("press 0 at any point to go back to the main menu.");
+        System.out.println("if you dont know just press ENTER.");
 
-
-
-
+        customPasswords[index].setExactLength(Utility.promptCustomPasswordIntegerIngredients("exact number of characters:",index));
+        customPasswords[index].setMaxConsecutiveCharactersAllowed(Utility.promptCustomPasswordIntegerIngredients("consecutive characters allowed:",index));
+        if(customPasswords[index].getExactLength()!=-1){
+            customPasswords[index].setMaxLength(Utility.promptCustomPasswordIntegerIngredients("max number of characters:",index));
+            customPasswords[index].setMinimumLength(Utility.promptCustomPasswordIntegerIngredients("min number of characters:",index));
+        }
+        customPasswords[index].setIsContainUsernameAllowed(Utility.promptCustomPasswordBooleanIngredients("is allowed to contain username:",index));
+        customPasswords[index].setIsCapitalLetterRequired(Utility.promptCustomPasswordBooleanIngredients("is capital letter required:",index));
+        customPasswords[index].setIsLowerLetterRequired(Utility.promptCustomPasswordBooleanIngredients("is lower letter required:",index));
+        customPasswords[index].setIsUniqueCharacterRequired(Utility.promptCustomPasswordBooleanIngredients("is unique characters required:",index));
+        customPasswords[index].setName("custom password "+index+1);
+        hasCreatedCustomPassword =true;
+        System.out.println("ok, your custom password is set, it's name is: custom password "+index+1);
     }
     private static void crackPasswordWithAtMost(int maxLength){
         for(int i=1;i<=maxLength;i++){
@@ -204,6 +253,7 @@ public class Main {
         System.out.println("Enter your password for verification:");
         String enteredPassword = scanner.nextLine();
         if (verifyPassword(enteredPassword,enteredUsername)) {
+            hasLogIn=true;
             System.out.println("Password verified successfully!");
         } else {
             System.out.println("Password verification failed.");
